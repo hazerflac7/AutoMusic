@@ -6,7 +6,10 @@ import org.schabi.newpipe.extractor.exceptions.ContentNotAvailableException
 
 internal const val ID_AUTHORITY = BuildConfig.APPLICATION_ID
 internal const val ID_ROOT = "//$ID_AUTHORITY"
+internal const val ID_RECENT = "recent"
+internal const val ID_LIKED = "liked"
 internal const val ID_BOOKMARKS = "playlists"
+internal const val ID_SUBSCRIPTIONS = "subscriptions"
 internal const val ID_HISTORY = "history"
 internal const val ID_INFO_ITEM = "item"
 

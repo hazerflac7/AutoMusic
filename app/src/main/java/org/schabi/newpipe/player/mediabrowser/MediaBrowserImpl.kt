@@ -34,6 +34,7 @@ import org.schabi.newpipe.extractor.search.SearchInfo
 import org.schabi.newpipe.extractor.stream.StreamInfoItem
 import org.schabi.newpipe.local.bookmark.MergedPlaylistManager
 import org.schabi.newpipe.local.playlist.LocalPlaylistManager
+import org.schabi.newpipe.local.subscription.SubscriptionManager
 import org.schabi.newpipe.local.playlist.RemotePlaylistManager
 import org.schabi.newpipe.util.ExtractorHelper
 import org.schabi.newpipe.util.ServiceHelper
@@ -52,6 +53,7 @@ class MediaBrowserImpl(
 ) {
     private val packageValidator = PackageValidator(context)
     private val database = NewPipeDatabase.getInstance(context)
+    private val subscriptionManager = SubscriptionManager(context)
     private var disposables = CompositeDisposable()
 
     init {
@@ -139,9 +141,24 @@ class MediaBrowserImpl(
                 return Single.just(
                     listOf(
                         createRootMediaItem(
+                            ID_RECENT,
+                            "Recently Played",
+                            R.drawable.ic_history_white
+                        ),
+                        createRootMediaItem(
+                            ID_LIKED,
+                            "Liked Music",
+                            R.drawable.ic_bookmark_white
+                        ),
+                        createRootMediaItem(
                             ID_BOOKMARKS,
                             context.resources.getString(R.string.tab_bookmarks_short),
                             R.drawable.ic_bookmark_white
+                        ),
+                        createRootMediaItem(
+                            ID_SUBSCRIPTIONS,
+                            "Subscriptions",
+                            R.drawable.ic_subscriptions
                         ),
                         createRootMediaItem(
                             ID_HISTORY,
@@ -169,6 +186,8 @@ class MediaBrowserImpl(
                     Log.w(TAG, "Unknown playlist URI: $parentId")
                     throw parseError(parentId)
                 }
+
+                ID_SUBSCRIPTIONS -> return populateSubscriptions()
 
                 ID_HISTORY -> return populateHistory()
 
@@ -390,6 +409,16 @@ class MediaBrowserImpl(
     //endregion
 
     //region Search
+    private fun populateSubscriptions(): Single<List<MediaBrowserCompat.MediaItem>> {
+        return subscriptionManager.getSubscriptions()
+            .firstOrError()
+            .map { subscriptions ->
+                subscriptions.mapNotNull { subscription ->
+                    createInfoItemMediaItem(subscription.toChannelInfoItem())
+                }
+            }
+    }
+
     fun onSearch(
         query: String,
         result: Result<List<MediaBrowserCompat.MediaItem>>
