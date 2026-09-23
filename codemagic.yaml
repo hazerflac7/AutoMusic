@@ -7,12 +7,6 @@ workflows:
       java: 21
 
     scripts:
-      - name: Install Android SDK 37
-        script: |
-          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          yes | "$SDKMANAGER" --licenses >/dev/null || true
-          "$SDKMANAGER" "platforms;android-37"
-
       - name: Build debug APK
         script: |
           chmod +x gradlew
