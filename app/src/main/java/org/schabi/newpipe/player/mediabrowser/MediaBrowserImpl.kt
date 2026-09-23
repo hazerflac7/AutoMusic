@@ -88,11 +88,24 @@ class MediaBrowserImpl(
             return null
         }
 
-        val extras = Bundle()
-        extras.putBoolean(
-            MediaConstants.BROWSER_SERVICE_EXTRAS_KEY_SEARCH_SUPPORTED,
-            true
-        )
+        val extras = Bundle().apply {
+            putBoolean(
+                MediaConstants.BROWSER_SERVICE_EXTRAS_KEY_SEARCH_SUPPORTED,
+                true
+            )
+
+            // Ask automotive hosts for a music-oriented presentation:
+            // browsable categories as a grid, playable content as lists.
+            putInt(
+                MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_BROWSABLE,
+                MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM
+            )
+            putInt(
+                MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_PLAYABLE,
+                MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM
+            )
+        }
+
         return MediaBrowserServiceCompat.BrowserRoot(ID_ROOT, extras)
     }
     //endregion
