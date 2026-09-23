@@ -47,6 +47,8 @@ public final class NotificationConstants {
             BASE_ACTION + ".player.MainPlayer.ACTION_FAST_FORWARD";
     public static final String ACTION_SHUFFLE =
             BASE_ACTION + ".player.MainPlayer.ACTION_SHUFFLE";
+    public static final String ACTION_LIKE =
+            BASE_ACTION + ".player.MainPlayer.ACTION_LIKE";
     public static final String ACTION_RECREATE_NOTIFICATION =
             BASE_ACTION + ".player.MainPlayer.ACTION_RECREATE_NOTIFICATION";
 

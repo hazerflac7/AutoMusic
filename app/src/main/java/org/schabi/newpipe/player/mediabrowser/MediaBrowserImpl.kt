@@ -187,6 +187,8 @@ class MediaBrowserImpl(
                     throw parseError(parentId)
                 }
 
+                ID_LIKED -> return populateLikedMusic()
+
                 ID_SUBSCRIPTIONS -> return populateSubscriptions()
 
                 ID_HISTORY -> return populateHistory()
@@ -409,6 +411,22 @@ class MediaBrowserImpl(
     //endregion
 
     //region Search
+    private fun populateLikedMusic(): Single<List<MediaBrowserCompat.MediaItem>> {
+        return LocalPlaylistManager(database).getPlaylists()
+            .firstOrError()
+            .flatMap { playlists ->
+                val likedPlaylist = playlists.firstOrNull {
+                    it.orderingName == "Liked Music"
+                }
+
+                if (likedPlaylist == null) {
+                    Single.just(emptyList())
+                } else {
+                    populateLocalPlaylist(likedPlaylist.uid)
+                }
+            }
+    }
+
     private fun populateSubscriptions(): Single<List<MediaBrowserCompat.MediaItem>> {
         return subscriptionManager.getSubscriptions()
             .firstOrError()

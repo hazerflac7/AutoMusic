@@ -41,6 +41,7 @@ import static org.schabi.newpipe.player.notification.NotificationConstants.ACTIO
 import static org.schabi.newpipe.player.notification.NotificationConstants.ACTION_PLAY_PREVIOUS;
 import static org.schabi.newpipe.player.notification.NotificationConstants.ACTION_RECREATE_NOTIFICATION;
 import static org.schabi.newpipe.player.notification.NotificationConstants.ACTION_REPEAT;
+import static org.schabi.newpipe.player.notification.NotificationConstants.ACTION_LIKE;
 import static org.schabi.newpipe.player.notification.NotificationConstants.ACTION_SHUFFLE;
 import static org.schabi.newpipe.util.ListHelper.getPopupResolutionIndex;
 import static org.schabi.newpipe.util.ListHelper.getResolutionIndex;
@@ -82,6 +83,11 @@ import com.google.android.exoplayer2.trackselection.MappingTrackSelector;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.video.VideoSize;
 
+import org.schabi.newpipe.database.NewPipeDatabase;
+import org.schabi.newpipe.database.playlist.PlaylistMetadataEntry;
+import org.schabi.newpipe.database.playlist.PlaylistStreamEntry;
+import org.schabi.newpipe.database.stream.model.StreamEntity;
+import org.schabi.newpipe.local.playlist.LocalPlaylistManager;
 import org.schabi.newpipe.MainActivity;
 import org.schabi.newpipe.R;
 import org.schabi.newpipe.databinding.PlayerBinding;
@@ -796,6 +802,7 @@ public final class Player implements PlaybackListener, Listener {
         intentFilter.addAction(ACTION_FAST_FORWARD);
         intentFilter.addAction(ACTION_REPEAT);
         intentFilter.addAction(ACTION_SHUFFLE);
+        intentFilter.addAction(ACTION_LIKE);
         intentFilter.addAction(ACTION_RECREATE_NOTIFICATION);
 
         intentFilter.addAction(VideoDetailFragment.ACTION_VIDEO_FRAGMENT_RESUMED);
@@ -843,6 +850,9 @@ public final class Player implements PlaybackListener, Listener {
                 break;
             case ACTION_SHUFFLE:
                 toggleShuffleModeEnabled();
+                break;
+            case ACTION_LIKE:
+                toggleLikedCurrentItem();
                 break;
             case Intent.ACTION_SCREEN_OFF:
                 screenOn = false;
@@ -2431,6 +2441,75 @@ public final class Player implements PlaybackListener, Listener {
     @Nullable
     public MediaItemTag getCurrentMetadata() {
         return currentMetadata;
+    }
+
+    private void toggleLikedCurrentItem() {
+        final PlayQueueItem item = getCurrentItem();
+        if (item == null) {
+            return;
+        }
+
+        final LocalPlaylistManager playlistManager =
+                new LocalPlaylistManager(NewPipeDatabase.getInstance(context));
+        final StreamEntity currentStream = new StreamEntity(item);
+
+        playlistManager.getPlaylists()
+                .firstOrError()
+                .flatMapCompletable(playlists -> {
+                    PlaylistMetadataEntry likedPlaylist = null;
+
+                    for (final PlaylistMetadataEntry playlist : playlists) {
+                        if ("Liked Music".equals(playlist.getOrderingName())) {
+                            likedPlaylist = playlist;
+                            break;
+                        }
+                    }
+
+                    if (likedPlaylist == null) {
+                        return playlistManager.createPlaylist(
+                                        "Liked Music",
+                                        java.util.Collections.singletonList(currentStream))
+                                .ignoreElement();
+                    }
+
+                    final long playlistId = likedPlaylist.getUid();
+
+                    return playlistManager.getPlaylistStreams(playlistId)
+                            .firstOrError()
+                            .flatMapCompletable(streams -> {
+                                boolean alreadyLiked = false;
+                                final java.util.List<Long> remainingIds =
+                                        new java.util.ArrayList<>();
+
+                                for (final PlaylistStreamEntry entry : streams) {
+                                    if (entry.getStreamEntity().getUrl()
+                                            .equals(currentStream.getUrl())) {
+                                        alreadyLiked = true;
+                                    } else {
+                                        remainingIds.add(entry.getStreamId());
+                                    }
+                                }
+
+                                if (alreadyLiked) {
+                                    return playlistManager.updateJoin(
+                                            playlistId, remainingIds);
+                                }
+
+                                return playlistManager.appendToPlaylist(
+                                                playlistId,
+                                                java.util.Collections.singletonList(
+                                                        currentStream))
+                                        .ignoreElement();
+                            });
+                })
+                .subscribe(
+                        () -> {
+                            // Refresh media-session custom actions after the
+                            // database state changes.
+                            UIs.call(MediaSessionPlayerUi::updateMediaSessionActions);
+                        },
+                        throwable -> Log.e(TAG, "Unable to toggle Liked Music", throwable)
+                );
     }
 
     @Nullable

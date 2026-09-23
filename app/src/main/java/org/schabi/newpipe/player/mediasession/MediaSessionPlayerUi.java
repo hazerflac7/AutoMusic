@@ -1,5 +1,6 @@
 package org.schabi.newpipe.player.mediasession;
 
+import static org.schabi.newpipe.player.notification.NotificationConstants.ACTION_LIKE;
 import static org.schabi.newpipe.MainActivity.DEBUG;
 import static org.schabi.newpipe.player.notification.NotificationConstants.ACTION_RECREATE_NOTIFICATION;
 
@@ -29,10 +30,7 @@ import org.schabi.newpipe.player.ui.VideoPlayerUi;
 import org.schabi.newpipe.util.StreamTypeUtil;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class MediaSessionPlayerUi extends PlayerUi
         implements SharedPreferences.OnSharedPreferenceChangeListener {
@@ -198,16 +196,25 @@ public class MediaSessionPlayerUi extends PlayerUi
             return;
         }
 
-        // only use the fourth and fifth actions (the settings page also shows only the last 2 on
-        // Android 13+)
-        final List<NotificationActionData> newNotificationActions = IntStream.of(3, 4)
-                .map(i -> player.getPrefs().getInt(
-                        player.getContext().getString(NotificationConstants.SLOT_PREF_KEYS[i]),
-                        NotificationConstants.SLOT_DEFAULTS[i]))
-                .mapToObj(action -> NotificationActionData
-                        .fromNotificationActionEnum(player, action))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        // Android Auto / Android 13+ provides two customizable media-session actions.
+        // AutoMusic uses them for Like and Shuffle.
+        final List<NotificationActionData> newNotificationActions = new java.util.ArrayList<>();
+
+        newNotificationActions.add(
+                new NotificationActionData(
+                        ACTION_LIKE,
+                        "Like",
+                        R.drawable.ic_heart
+                )
+        );
+
+        final NotificationActionData shuffleAction =
+                NotificationActionData.fromNotificationActionEnum(
+                        player, NotificationConstants.SHUFFLE);
+
+        if (shuffleAction != null) {
+            newNotificationActions.add(shuffleAction);
+        }
 
         // avoid costly notification actions update, if nothing changed from last time
         if (!newNotificationActions.equals(prevNotificationActions)) {
