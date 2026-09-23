@@ -7,14 +7,11 @@ workflows:
       java: 21
 
     scripts:
-      - name: Find Android SDK tools
+      - name: Install Android SDK 37
         script: |
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-          echo "=== sdkmanager copies ==="
-          find "$ANDROID_HOME" -type f -name sdkmanager -print 2>/dev/null || true
-          echo "=== cmdline-tools ==="
-          find "$ANDROID_HOME/cmdline-tools" -maxdepth 4 -type f 2>/dev/null | head -100 || true
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-37"
 
       - name: Build debug APK
         script: |
