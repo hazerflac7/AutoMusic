@@ -43,6 +43,7 @@ public class MediaSessionPlayerUi extends PlayerUi
 
     private final String ignoreHardwareMediaButtonsKey;
     private boolean shouldIgnoreHardwareMediaButtons = false;
+    private boolean currentItemLiked = false;
 
     // used to check whether any notification action changed, before sending costly updates
     private List<NotificationActionData> prevNotificationActions = List.of();
@@ -177,6 +178,22 @@ public class MediaSessionPlayerUi extends PlayerUi
     }
 
 
+    public void refreshLikedState() {
+        player.isCurrentItemLiked()
+                .subscribe(
+                        liked -> {
+                            currentItemLiked = liked;
+
+                            // Force the custom actions to be rebuilt even when
+                            // the previous track had the same shuffle state.
+                            prevNotificationActions = List.of();
+                            updateMediaSessionActions();
+                        },
+                        throwable -> Log.e(TAG, "Unable to refresh Liked Music state", throwable)
+                );
+    }
+
+
     private void updateMediaSessionActions() {
         // On Android 13+ (or Android T or API 33+) the actions in the player notification can't be
         // controlled directly anymore, but are instead derived from custom media session actions.
@@ -203,8 +220,10 @@ public class MediaSessionPlayerUi extends PlayerUi
         newNotificationActions.add(
                 new NotificationActionData(
                         ACTION_LIKE,
-                        "Like",
-                        R.drawable.ic_heart
+                        currentItemLiked ? "Unlike" : "Like",
+                        currentItemLiked
+                                ? R.drawable.ic_heart
+                                : R.drawable.ic_heart_outline
                 )
         );
 
@@ -286,7 +305,7 @@ public class MediaSessionPlayerUi extends PlayerUi
     @Override
     public void onMetadataChanged(@NonNull final StreamInfo info) {
         super.onMetadataChanged(info);
-        updateMediaSessionActions();
+        refreshLikedState();
     }
 
     @Override

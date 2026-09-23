@@ -2443,6 +2443,29 @@ public final class Player implements PlaybackListener, Listener {
         return currentMetadata;
     }
 
+    public io.reactivex.rxjava3.core.Single<Boolean> isCurrentItemLiked() {
+        final PlayQueueItem item = getCurrentItem();
+        if (item == null) {
+            return io.reactivex.rxjava3.core.Single.just(false);
+        }
+
+        final LocalPlaylistManager playlistManager =
+                new LocalPlaylistManager(NewPipeDatabase.getInstance(context));
+
+        return playlistManager.getPlaylistDuplicates(item.getUrl())
+                .firstOrError()
+                .map(playlists -> {
+                    for (final org.schabi.newpipe.database.playlist.PlaylistDuplicatesEntry playlist
+                            : playlists) {
+                        if ("Liked Music".equals(playlist.getOrderingName())
+                                && playlist.getTimesStreamIsContained() > 0) {
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+    }
+
     private void toggleLikedCurrentItem() {
         final PlayQueueItem item = getCurrentItem();
         if (item == null) {
@@ -2503,10 +2526,8 @@ public final class Player implements PlaybackListener, Listener {
                             });
                 })
                 .subscribe(
-                        () -> {
-                            // Refresh media-session custom actions after the
-                            // database state changes.
-                        },
+                        () -> UIs().get(MediaSessionPlayerUi.class)
+                                .ifPresent(MediaSessionPlayerUi::refreshLikedState),
                         throwable -> Log.e(TAG, "Unable to toggle Liked Music", throwable)
                 );
     }
