@@ -83,7 +83,7 @@ import com.google.android.exoplayer2.trackselection.MappingTrackSelector;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.video.VideoSize;
 
-import org.schabi.newpipe.database.NewPipeDatabase;
+import org.schabi.newpipe.NewPipeDatabase;
 import org.schabi.newpipe.database.playlist.PlaylistMetadataEntry;
 import org.schabi.newpipe.database.playlist.PlaylistStreamEntry;
 import org.schabi.newpipe.database.stream.model.StreamEntity;
@@ -2506,7 +2506,6 @@ public final class Player implements PlaybackListener, Listener {
                         () -> {
                             // Refresh media-session custom actions after the
                             // database state changes.
-                            UIs.call(MediaSessionPlayerUi::updateMediaSessionActions);
                         },
                         throwable -> Log.e(TAG, "Unable to toggle Liked Music", throwable)
                 );
