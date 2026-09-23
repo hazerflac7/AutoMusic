@@ -180,6 +180,7 @@ public class MediaSessionPlayerUi extends PlayerUi
 
     public void refreshLikedState() {
         player.isCurrentItemLiked()
+                .observeOn(io.reactivex.rxjava3.android.schedulers.AndroidSchedulers.mainThread())
                 .subscribe(
                         liked -> {
                             currentItemLiked = liked;
